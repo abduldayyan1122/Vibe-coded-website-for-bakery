@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ember & Crumb – Night Bakery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,800;1,9..144,500&family=DM+Sans:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    @property --glow {
+      syntax: "<number>";
+      inherits: false;
+      initial-value: 0
+    }
+
+    :root {
+      --bg: #15122b;
+      --bg2: #1f1b45;
+      --ink: #fff6ea;
+      --mut: #b9b2d6;
+      --butter: #ffd479;
+      --rasp: #ff4f7b;
+      --pist: #9fe0b5;
+      --card: #262256;
+      --line: #ffffff1f;
+      color-scheme: dark;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px)
+    }
+
+    @media (prefers-color-scheme:light) {
+      :root:not([data-theme="dark"]) {
+        --bg: #fff3e0;
+        --bg2: #ffe5c2;
+        --ink: #2a1b3d;
+        --mut: #6a587f;
+        --card: #ffffff;
+        --line: #2a1b3d22;
+        color-scheme: light
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #15122b;
+      --bg2: #1f1b45;
+      --ink: #fff6ea;
+      --mut: #b9b2d6;
+      --card: #262256;
+      --line: #ffffff1f
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 70px)
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 400 1.05rem/1.6 sans-serif;
+      overflow-x: hidden
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: sans-serif;
+      margin: 0;
+      line-height: 1.05;
+      letter-spacing: -.02em
+    }
+
+    a {
+      color: inherit
+    }
+
+    .wrap {
+      width: min(1160px, 92%);
+      margin-inline: auto;
+      font-family :sans-serif;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(500px circle at var(--mx, 50%) var(--my, 30%), #ffd47922, transparent 60%);
+      z-index: 50
+    }
+
+    /* progress */
+    #bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      background: linear-gradient(90deg, var(--rasp), var(--butter));
+      z-index: 100
+    }
+
+    /* nav */
+    nav {
+      position: sticky;
+      top: env(safe-area-inset-top, 0px);
+      z-index: 60;
+      backdrop-filter: blur(14px);
+      background: color-mix(in srgb, var(--bg) 70%, transparent);
+      border-bottom: 1px solid var(--line)
+    }
+
+    nav .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      gap: 12px
+    }
+
+    .logo {
+      font: 800 1.35rem Fraunces, serif;
+      text-decoration: none
+    }
+
+    .logo i {
+      color: var(--rasp);
+      font-style: normal
+    }
+
+    nav ul {
+      display: flex;
+      gap: 26px;
+      list-style: none;
+      margin: 0;
+      padding: 0
+    }
+
+    nav ul a {
+      text-decoration: none;
+      color: var(--mut);
+      transition: color .2s
+    }
+
+    nav ul a:hover {
+      color: var(--ink)
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      border-radius: 99px;
+      padding: 13px 24px;
+      font: 700 1rem "DM Sans", sans-serif;
+      cursor: pointer;
+      color: #2a1209;
+      background: linear-gradient(135deg, var(--butter), #ffae5c);
+      box-shadow: 0 8px 30px #ffae5c44;
+      transition: transform .25s cubic-bezier(.3, 1.6, .5, 1), box-shadow .25s
+    }
+
+    .btn:hover {
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 14px 40px #ffae5c66
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--line);
+      box-shadow: none
+    }
+
+    .cart {
+      position: relative
+    }
+
+    .cart b {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--rasp);
+      color: #fff;
+      border-radius: 99px;
+      min-width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      font-size: .75rem
+    }
+
+    .bump {
+      animation: bump .5s
+    }
+
+    @keyframes bump {
+      40% {
+        transform: scale(1.35) rotate(-6deg)
+      }
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--pist);
+      outline-offset: 3px
+    }
+
+    /* hero */
+    .hero {
+      position: relative;
+      min-height: calc(100svh - 64px);
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      isolation: isolate
+    }
+
+    #dust {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1
+    }
+
+    .hero .wrap {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 40px;
+      align-items: center;
+      padding-block: 50px
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 7.4vw, 6.2rem);
+      font-weight: 800
+    }
+
+    .hero h1 span {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(60%) rotate(6deg);
+      filter: blur(8px);
+      animation: rise .9s cubic-bezier(.2, .9, .2, 1) forwards;
+      animation-delay: calc(var(--i)*55ms)
+    }
+
+    @keyframes rise {
+      to {
+        opacity: 1;
+        transform: none;
+        filter: none
+      }
+    }
+
+    .hero em {
+      font-style: italic;
+      background: linear-gradient(100deg, var(--butter), var(--rasp), var(--butter));
+      background-size: 200%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shine 5s linear infinite
+    }
+
+    @keyframes shine {
+      to {
+        background-position: 200%
+      }
+    }
+
+    .hero p {
+      color: var(--mut);
+      max-width: 46ch;
+      font-size: 1.18rem;
+      margin: 22px 0 30px
+    }
+
+    .cta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap
+    }
+
+    .stage {
+      perspective: 900px;
+      display: grid;
+      place-items: center
+    }
+
+    .plate {
+      width: min(420px, 80vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffffff22, transparent 55%), var(--bg2);
+      border: 1px solid var(--line);
+      box-shadow: 0 40px 90px #0008, inset 0 0 80px #ffd47922;
+      transform-style: preserve-3d;
+      transition: transform .15s;
+      position: relative;
+      animation: float 7s ease-in-out infinite
+    }
+
+    @keyframes float {
+      50% {
+        translate: 0 -16px
+      }
+    }
+
+    .plate svg {
+      position: absolute;
+      width: 62%;
+      left: 19%;
+      top: 19%;
+      border-radius: 24px;
+      filter: drop-shadow(0 20px 20px #0007);
+      transform: translateZ(60px)
+    }
+
+    .plate .orbit {
+      position: absolute;
+      width: 34%;
+      transform: translateZ(110px);
+      filter: drop-shadow(0 14px 14px #0006)
+    }
+
+    .o1 {
+      right: -6%;
+      top: 6%;
+      animation: spin 14s linear infinite
+    }
+
+    .o2 {
+      left: -8%;
+      bottom: 10%;
+      animation: spin 18s linear infinite reverse
+    }
+
+    @keyframes spin {
+      to {
+        rotate: 360deg
+      }
+    }
+
+    /* marquee */
+    .marq {
+      border-block: 1px solid var(--line);
+      overflow: hidden;
+      background: var(--bg2);
+      padding: 16px 0
+    }
+
+    .marq div {
+      display: flex;
+      gap: 48px;
+      width: max-content;
+      animation: slide 28s linear infinite;
+      font: italic 500 1.7rem Fraunces, serif;
+      color: var(--butter)
+    }
+
+    .marq:hover div {
+      animation-play-state: paused
+    }
+
+    @keyframes slide {
+      to {
+        transform: translateX(-50%)
+      }
+    }
+
+    /* sections */
+    section {
+      padding: 110px 0
+    }
+
+    .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 44px
+    }
+
+    .head h2 {
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      max-width: 14ch
+    }
+
+    .head p {
+      color: var(--mut);
+      max-width: 40ch;
+      margin: 0
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px) scale(.97);
+      transition: opacity .8s, transform .8s cubic-bezier(.2, .9, .2, 1)
+    }
+
+    .reveal.in {
+      opacity: 1;
+      transform: none
+    }
+
+    /* gallery */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 22px
+    }
+
+    .shot {
+      position: relative;
+      border-radius: 26px;
+      overflow: hidden;
+      aspect-ratio: 4/5;
+      cursor: pointer;
+      border: 0;
+      padding: 0;
+      background: var(--card);
+      transition: transform .5s cubic-bezier(.2, .9, .2, 1), box-shadow .5s
+    }
+
+    .shot:nth-child(3n+2) {
+      transform: translateY(28px)
+    }
+
+    .shot:hover {
+      transform: translateY(-8px) rotate(-1.2deg) scale(1.02);
+      box-shadow: 0 30px 60px #0006
+    }
+
+    .shot svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      transition: transform .9s
+    }
+
+    .shot:hover svg {
+      transform: scale(1.12) rotate(2deg)
+    }
+
+    .shot span {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      background: #000a;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: .9rem;
+      backdrop-filter: blur(6px)
+    }
+
+    .swap {
+      animation: pop .6s cubic-bezier(.3, 1.5, .5, 1) both;
+      animation-delay: calc(var(--i)*70ms)
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: scale(.7) rotate(-6deg)
+      }
+    }
+
+    /* video */
+    .video {
+      position: relative;
+      border-radius: 32px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: 0 40px 100px #0007;
+      background: #0b0918;
+      aspect-ratio: 16/9
+    }
+
+    .video canvas {
+      width: 100%;
+      height: 100%;
+      display: block
+    }
+
+    .vcap {
+      position: absolute;
+      left: 28px;
+      bottom: 36px;
+      font: 800 clamp(1.5rem, 4vw, 3rem) Fraunces, serif;
+      text-shadow: 0 4px 20px #000a;
+      pointer-events: none
+    }
+
+    .vcap small {
+      display: block;
+      font: 500 1rem "DM Sans";
+      color: var(--butter);
+      margin-top: 6px
+    }
+
+    .vctl {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      gap: 10px
+    }
+
+    .vctl button {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid #fff4;
+      background: #0007;
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      backdrop-filter: blur(8px)
+    }
+
+    .vprog {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 5px;
+      background: var(--rasp);
+      width: 0
+    }
+
+    /* menu */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 30px
+    }
+
+    .tabs button {
+      padding: 10px 20px;
+      border-radius: 99px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      font: 500 1rem "DM Sans";
+      cursor: pointer;
+      transition: .25s
+    }
+
+    .tabs button[aria-pressed="true"] {
+      background: var(--ink);
+      color: var(--bg);
+      transform: scale(1.06)
+    }
+
+    .menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 16px;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 14px;
+      transition: transform .3s, border-color .3s
+    }
+
+    .item:hover {
+      transform: translateY(-6px);
+      border-color: var(--butter)
+    }
+
+    .item svg {
+      width: 96px;
+      height: 96px;
+      border-radius: 18px
+    }
+
+    .item h3 {
+      font-size: 1.25rem
+    }
+
+    .item p {
+      margin: 4px 0 10px;
+      color: var(--mut);
+      font-size: .92rem;
+      line-height: 1.4
+    }
+
+    .item div {
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .item b {
+      color: var(--butter);
+      font-size: 1.15rem
+    }
+
+    .item button {
+      border: 0;
+      border-radius: 99px;
+      padding: 8px 16px;
+      background: var(--rasp);
+      color: #fff;
+      font: 700 .9rem "DM Sans";
+      cursor: pointer;
+      transition: transform .2s
+    }
+
+    .item button:active {
+      transform: scale(.88)
+    }
+
+    .item.hide {
+      display: none
+    }
+
+    /* visit */
+    .visit {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 22px
+    }
+
+    .box {
+      background: linear-gradient(160deg, var(--card), var(--bg2));
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 32px
+    }
+
+    .box h3 {
+      font-size: 1.7rem;
+      margin-bottom: 12px
+    }
+
+    .box p {
+      color: var(--mut);
+      margin: .3em 0
+    }
+
+    .big {
+      font: 800 3rem Fraunces, serif;
+      color: var(--butter)
+    }
+
+    footer {
+      padding: 50px 0;
+      border-top: 1px solid var(--line);
+      color: var(--mut);
+      text-align: center
+    }
+
+    /* dialog + toast */
+    dialog {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--card);
+      color: var(--ink);
+      padding: 26px;
+      width: min(520px, 92vw)
+    }
+
+    dialog::backdrop {
+      background: #0009;
+      backdrop-filter: blur(6px)
+    }
+
+    dialog[open] {
+      animation: pop .5s cubic-bezier(.3, 1.5, .5, 1)
+    }
+
+    dialog svg {
+      width: 100%;
+      border-radius: 18px;
+      display: block;
+      margin-bottom: 14px
+    }
+
+    dialog form {
+      display: grid;
+      gap: 12px
+    }
+
+    input,
+    select {
+      padding: 13px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      font: inherit
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      translate: -50% 140%;
+      background: var(--ink);
+      color: var(--bg);
+      padding: 14px 24px;
+      border-radius: 99px;
+      font-weight: 700;
+      z-index: 200;
+      transition: translate .5s cubic-bezier(.3, 1.5, .5, 1)
+    }
+
+    #toast.on {
+      translate: -50% 0
+    }
+
+    /* scroll-driven progress (modern browsers) */
+    @supports (animation-timeline:scroll()) {
+      #bar {
+        animation: grow linear both;
+        animation-timeline: scroll(root)
+      }
+
+      @keyframes grow {
+        to {
+          transform: scaleX(1)
+        }
+      }
+    }
+
+    @media (max-width:860px) {
+      .hero .wrap {
+        grid-template-columns: 1fr
+      }
+
+      nav ul {
+        display: none
+      }
+
+      .shot:nth-child(3n+2) {
+        transform: none
+      }
+
+      section {
+        padding: 80px 0
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      * {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important
+      }
+
+      .reveal {
+        opacity: 1;
+        transform: none
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="bar"></div>
+  <nav>
+    <div class="wrap">
+      <a class="logo" href="#top">Ember <i>&</i> Crumb</a>
+      <ul>
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#film">Film</a></li>
+        <li><a href="#menu">Menu</a></li>
+        <li><a href="#visit">Visit</a></li>
+      </ul>
+      <button class="btn cart" id="cartBtn" aria-label="Open order form">🧺 Order<b id="count">0</b></button>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <canvas id="dust" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div>
+        <h1 id="title">Baked at night, <em>warm by morning.</em></h1>
+        <p>Small-batch breads and pastries, shaped by hand after midnight and out of the oven before sunrise.</p>
+        <div class="cta"><a class="btn" href="#menu">See today’s bake</a><a class="btn ghost" href="#film">Watch the
+            oven</a></div>
+      </div>
+      <div class="stage">
+        <div class="plate" id="plate"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="marq" aria-hidden="true">
+    <div id="marq"></div>
+  </div>
+
+  <section id="gallery">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2>Fresh from the tray</h2>
+        <p>Every visit shows a different set. Shuffle to see a new batch, or tap a pastry for a closer look.</p><button
+          class="btn" id="shuffle">🎲 Shuffle photos</button>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <section id="film" style="background:var(--bg2)">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2>Dough to golden</h2>
+        <p>A four-step loop of our night shift: mix, rise, bake, serve.</p>
+      </div>
+      <div class="video reveal">
+        <canvas id="vid"></canvas>
+        <div class="vcap" id="vcap"></div>
+        <div class="vctl"><button id="vplay" aria-label="Pause video">❚❚</button><button id="vskip"
+            aria-label="Next scene">⏭</button></div>
+        <div class="vprog" id="vprog"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="menu">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2>Today’s menu</h2>
+        <p>Baked in small trays, so when it’s gone, it’s gone.</p>
+      </div>
+      <div class="tabs reveal" id="tabs"></div>
+      <div class="menu" id="menuGrid"></div>
+    </div>
+  </section>
+
+  <section id="visit" style="background:var(--bg2)">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2>Come hungry</h2>
+      </div>
+      <div class="visit">
+        <div class="box reveal">
+          <h3>Hours</h3>
+          <p>Tue–Sat · 5:00 am – 3:00 pm</p>
+          <p>Sun · 6:00 am – 1:00 pm</p>
+          <p>Closed Monday for dough rest.</p>
+        </div>
+        <div class="box reveal">
+          <h3>Today’s tray</h3>
+          <div class="big" id="ticker">0</div>
+          <p>pastries out of the oven so far</p>
+        </div>
+        <div class="box reveal">
+          <h3>Pre-order</h3>
+          <p>Reserve a box before 9 pm and pick it up warm.</p><br><button class="btn" id="open2">Reserve a box</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>© 2026 Ember & Crumb Bakery. Made with flour, butter and patience.</footer>
+
+  <dialog id="dlg">
+    <div id="dpic"></div>
+    <form id="orderForm">
+      <h3 id="dtitle" style="font-size:1.6rem">Reserve your box</h3><input id="nm" placeholder="Your name"
+        required><select id="tm">
+        <option>Pickup 6:00 am</option>
+        <option>Pickup 8:00 am</option>
+        <option>Pickup 10:00 am</option>
+        <option>Pickup 12:00 pm</option>
+      </select>
+      <div style="display:flex;gap:10px"><button class="btn" type="submit">Confirm order</button><button
+          class="btn ghost" type="button" id="close">Close</button></div>
+    </form>
+  </dialog>
+  <div id="toast" role="status"></div>
+
+  <script>
+    const $ = s => document.querySelector(s), R = (a, b) => Math.random() * (b - a) + a, pick = a => a[Math.floor(Math.random() * a.length)];
+    const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+    let uid = 0;
+    /* ---------- random "photo" generator (procedural SVG pastries) ---------- */
+    const BGS = [['#ff9a8b', '#ff6a88'], ['#a18cd1', '#fbc2eb'], ['#84fab0', '#8fd3f4'], ['#ffecd2', '#fcb69f'], ['#fddb92', '#d1fdff'], ['#f6d365', '#fda085'], ['#c2e9fb', '#a1c4fd'], ['#ffd1ff', '#fad0c4']];
+    const CRUST = ['#d9923c', '#c47a2a', '#e8a954', '#b8691f'], ICING = ['#ff5c8a', '#7fd6c2', '#ffd166', '#b983ff', '#fff'],
+      SPR = ['#fff', '#ffd166', '#06d6a0', '#118ab2', '#ef476f'];
+    const arts = {
+      croissant() {
+        const g = 'c' + uid++, c = pick(CRUST); let s = `<defs><radialGradient id="${g}" cx="40%" cy="30%"><stop offset="0" stop-color="#ffd58a"/><stop offset="1" stop-color="${c}"/></radialGradient></defs>`;
+        for (let i = 0; i < 7; i++) { const a = (i - 3) * .38, x = 100 + Math.sin(a) * 58, y = 122 - Math.cos(a) * 46 - Math.abs(i - 3) * -4, w = 14 + (3 - Math.abs(i - 3)) * 7; s += `<ellipse cx="${x}" cy="${y}" rx="${w}" ry="${w * 1.5}" transform="rotate(${a * 57} ${x} ${y})" fill="url(#${g})" stroke="#8a4a14" stroke-width="2"/>` }
+        return s + `<path d="M60 120q40-30 80 0" stroke="#fff6" stroke-width="3" fill="none"/>`
+      },
+      donut() {
+        const ic = pick(ICING); let s = `<circle cx="100" cy="105" r="62" fill="#e0a45c"/><circle cx="100" cy="98" r="58" fill="${ic}"/><circle cx="100" cy="98" r="18" fill="#00000030"/><circle cx="100" cy="98" r="15" fill="#0000"/>`;
+        for (let i = 0; i < 22; i++) { const a = R(0, 6.28), r = R(26, 52); s += `<rect x="${100 + Math.cos(a) * r}" y="${98 + Math.sin(a) * r}" width="9" height="3.5" rx="2" fill="${pick(SPR)}" transform="rotate(${R(0, 180)} ${100 + Math.cos(a) * r} ${98 + Math.sin(a) * r})"/>` }
+        return s + `<ellipse cx="78" cy="66" rx="16" ry="6" fill="#fff6" transform="rotate(-30 78 66)"/>`
+      },
+      loaf() {
+        const c = pick(CRUST); let s = `<path d="M30 140q-6-70 70-72t70 72z" fill="${c}" stroke="#7a3f10" stroke-width="3"/><path d="M30 140h140v14a10 10 0 0 1-10 10H40a10 10 0 0 1-10-10z" fill="#b36a1e"/>`;
+        for (let i = 0; i < 4; i++)s += `<path d="M${62 + i * 26} 100l14 22" stroke="#f9e0b0" stroke-width="7" stroke-linecap="round"/>`;
+        return s + `<path d="M52 95q30-24 70-16" stroke="#fff5" stroke-width="4" fill="none" stroke-linecap="round"/>`
+      },
+      cupcake() {
+        const f = pick(ICING), w = pick(['#ff9ec4', '#9ad0ff', '#ffd479', '#b6f0c1']); let s = `<path d="M52 110h96l-14 62H66z" fill="${w}"/>`;
+        for (let i = 0; i < 5; i++)s += `<path d="M${64 + i * 18} 112l${-4 + i * 2} 58" stroke="#0002" stroke-width="3"/>`;
+        s += `<ellipse cx="100" cy="108" rx="58" ry="16" fill="${f}"/><ellipse cx="100" cy="86" rx="46" ry="16" fill="${f}"/><ellipse cx="100" cy="66" rx="32" ry="14" fill="${f}"/><path d="M100 40q-8 14 0 26q8-12 0-26z" fill="${f}"/><circle cx="100" cy="42" r="9" fill="#e11d48"/>`;
+        for (let i = 0; i < 10; i++)s += `<circle cx="${R(55, 145)}" cy="${R(70, 108)}" r="2.6" fill="${pick(SPR)}"/>`; return s
+      },
+      tart() {
+        const fr = pick([['#e11d48', '#fb7185'], ['#4338ca', '#818cf8'], ['#f59e0b', '#fde047'], ['#16a34a', '#86efac']]); let s = `<ellipse cx="100" cy="112" rx="72" ry="52" fill="#d9923c" stroke="#8a4a14" stroke-width="3"/><ellipse cx="100" cy="108" rx="60" ry="42" fill="#fff1d0"/>`;
+        for (let i = 0; i < 14; i++) { const a = R(0, 6.28), r = R(0, 42); s += `<circle cx="${100 + Math.cos(a) * r * 1.3}" cy="${108 + Math.sin(a) * r * .8}" r="${R(7, 11)}" fill="${fr[0]}"/><circle cx="${100 + Math.cos(a) * r * 1.3 - 3}" cy="${108 + Math.sin(a) * r * .8 - 3}" r="3" fill="${fr[1]}"/>` } return s
+      },
+      macaron() {
+        const [a, b] = pick([['#ff9ec4', '#fff'], ['#a7f3d0', '#fff'], ['#c4b5fd', '#fde68a'], ['#fdba74', '#fff7ed']]);
+        return `<ellipse cx="100" cy="76" rx="54" ry="26" fill="${a}"/><rect x="50" y="88" width="100" height="18" rx="9" fill="${b}"/><ellipse cx="100" cy="118" rx="54" ry="26" fill="${a}"/><path d="M52 80q4 8 8 0m80 0q4 8 8 0" stroke="#fff8" stroke-width="3" fill="none"/>`
+      }
+    };
+    const KINDS = Object.keys(arts), NAMES = { croissant: 'Butter croissant', donut: 'Glazed donut', loaf: 'Sourdough loaf', cupcake: 'Berry cupcake', tart: 'Fruit tart', macaron: 'Macaron' };
+    function photo(kind, small) {
+      const [c1, c2] = pick(BGS), g = 'b' + uid++;
+      return `<svg viewBox="0 0 200 200" role="img" aria-label="${NAMES[kind]}"><defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient><filter id="${g}s"><feGaussianBlur stdDeviation="3"/></filter></defs><rect width="200" height="200" fill="url(#${g})"/>${small ? '' : `<circle cx="${R(20, 180)}" cy="${R(20, 80)}" r="${R(30, 60)}" fill="#fff3"/><circle cx="${R(20, 180)}" cy="${R(120, 190)}" r="${R(20, 50)}" fill="#fff2"/>`}<ellipse cx="100" cy="176" rx="64" ry="8" fill="#0003" filter="url(#${g}s)"/>${arts[kind]()}</svg>`
+    }
+    /* hero plate */
+    $('#plate').innerHTML = photo('croissant') + `<div class="orbit o1">${photo('donut', 1)}</div><div class="orbit o2">${photo('macaron', 1)}</div>`;
+    $('#plate').querySelectorAll('.orbit svg').forEach(s => { s.style.cssText = 'position:static;width:100%;transform:none;border-radius:50%' });
+    const stage = $('.stage'), plate = $('#plate');
+    stage.addEventListener('pointermove', e => { const r = stage.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; plate.style.transform = `rotateY(${x * 22}deg) rotateX(${-y * 22}deg)` });
+    stage.addEventListener('pointerleave', () => plate.style.transform = '');
+    /* headline split */
+    (function () { const h = $('#title'); let i = 0; const walk = n => { [...n.childNodes].forEach(c => { if (c.nodeType === 3) { const f = document.createDocumentFragment(); c.textContent.split(/(\s+)/).forEach(w => { if (/^\s+$/.test(w) || !w) { f.append(w); return } const wd = document.createElement('span'); wd.style.cssText = 'display:inline-block;white-space:nowrap';[...w].forEach(ch => { const s = document.createElement('span'); s.textContent = ch; s.style.setProperty('--i', i++); wd.append(s) }); f.append(wd) }); c.replaceWith(f) } else walk(c) }) }; walk(h) })();
+    /* marquee */
+    $('#marq').innerHTML = Array(2).fill('<span>Sourdough</span><span>✦</span><span>Croissants</span><span>✦</span><span>Cinnamon rolls</span><span>✦</span><span>Macarons</span><span>✦</span><span>Fruit tarts</span><span>✦</span>').join('');
+    /* gallery */
+    function gallery() {
+      const ks = [...KINDS].sort(() => Math.random() - .5).slice(0, 6);
+      $('#grid').innerHTML = ks.map((k, i) => `<button class="shot swap" style="--i:${i}" data-k="${k}" aria-label="View ${NAMES[k]}">${photo(k)}<span>${NAMES[k]}</span></button>`).join('')
+    }
+    gallery(); $('#shuffle').onclick = gallery;
+    $('#grid').addEventListener('click', e => { const b = e.target.closest('.shot'); if (!b) return; $('#dpic').innerHTML = b.querySelector('svg').outerHTML; $('#dtitle').textContent = NAMES[b.dataset.k]; $('#dlg').showModal() });
+    /* menu */
+    const MENU = [['Butter croissant', 4.5, 'croissant', 'Pastry', 'Laminated 27 layers, baked dark.'], ['Glazed donut', 3.8, 'donut', 'Sweet', 'Brioche dough with a crisp sugar shell.'], ['Country sourdough', 9, 'loaf', 'Bread', '72-hour ferment, blistered crust.'], ['Berry cupcake', 4.2, 'cupcake', 'Sweet', 'Vanilla crumb, whipped berry cream.'], ['Seasonal fruit tart', 6.5, 'tart', 'Pastry', 'Almond cream, glazed fruit.'], ['Pistachio macaron', 2.9, 'macaron', 'Sweet', 'Chewy shell, salted pistachio filling.'], ['Seeded baguette', 5, 'loaf', 'Bread', 'Poppy, sesame and flax.'], ['Pain au chocolat', 4.9, 'croissant', 'Pastry', 'Two batons of dark chocolate.']];
+    let cat = 'All'; const cats = ['All', 'Bread', 'Pastry', 'Sweet'];
+    $('#tabs').innerHTML = cats.map(c => `<button aria-pressed="${c === 'All'}">${c}</button>`).join('');
+    $('#menuGrid').innerHTML = MENU.map((m, i) => `<article class="item reveal" data-c="${m[3]}"><div style="display:block;width:96px">${photo(m[2], 1)}</div><div style="display:block"><h3>${m[0]}</h3><p>${m[4]}</p><div><b>$${m[1].toFixed(2)}</b><button data-n="${m[0]}">Add</button></div></div></article>`).join('');
+    $('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; cat = b.textContent; $('#tabs').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); document.querySelectorAll('.item').forEach(it => { const show = cat === 'All' || it.dataset.c === cat; it.classList.toggle('hide', !show); if (show) { it.classList.remove('swap'); void it.offsetWidth; it.classList.add('swap') } }) };
+    let n = 0; const toast = t => { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), 2200) };
+    $('#menuGrid').onclick = e => { const b = e.target.closest('button[data-n]'); if (!b) return; n++; $('#count').textContent = n; $('#count').classList.remove('bump'); void $('#count').offsetWidth; $('#count').classList.add('bump'); toast(b.dataset.n + ' added to your box') };
+    /* dialog */
+    const openOrder = () => { $('#dpic').innerHTML = photo(pick(KINDS)); $('#dtitle').textContent = 'Reserve your box'; $('#dlg').showModal() };
+    $('#cartBtn').onclick = openOrder; $('#open2').onclick = openOrder; $('#close').onclick = () => $('#dlg').close();
+    $('#dlg').addEventListener('click', e => { if (e.target === $('#dlg')) $('#dlg').close() });
+    $('#orderForm').onsubmit = e => { e.preventDefault(); $('#dlg').close(); toast('Thanks ' + $('#nm').value + '! Your box is reserved.'); n = 0; $('#count').textContent = 0 };
+    /* reveal + ticker */
+    const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { x.target.classList.add('in'); io.unobserve(x.target) } }), { threshold: .15 });
+    document.querySelectorAll('.reveal').forEach((el, i) => { el.style.transitionDelay = (i % 4) * 80 + 'ms'; io.observe(el) });
+    let tk = 240; setInterval(() => { tk += Math.floor(R(1, 4)); $('#ticker').textContent = tk }, 1800); $('#ticker').textContent = tk;
+    addEventListener('pointermove', e => { document.documentElement.style.setProperty('--mx', e.clientX + 'px'); document.documentElement.style.setProperty('--my', e.clientY + 'px') });
+    /* ---------- hero particles: flour + embers ---------- */
+    const dc = $('#dust'), dx = dc.getContext('2d'); let P = [], DW, DH;
+    function rs() { const d = devicePixelRatio || 1; DW = dc.width = dc.offsetWidth * d; DH = dc.height = dc.offsetHeight * d; P = Array.from({ length: 90 }, () => ({ x: R(0, DW), y: R(0, DH), r: R(1, 4) * d, v: R(.2, .9) * d, e: Math.random() < .4, p: R(0, 6) })) }
+    rs(); addEventListener('resize', rs);
+    function dust(t) { dx.clearRect(0, 0, DW, DH); P.forEach(p => { p.y -= p.v; p.x += Math.sin(t / 900 + p.p) * .5; if (p.y < -10) { p.y = DH + 10; p.x = R(0, DW) } dx.beginPath(); dx.arc(p.x, p.y, p.r, 0, 6.28); dx.fillStyle = p.e ? `rgba(255,${150 + Math.sin(p.p + t / 300) * 60 | 0},80,.8)` : 'rgba(255,246,234,.35)'; dx.shadowBlur = p.e ? 12 : 0; dx.shadowColor = '#ff9a4d'; dx.fill() }); if (!reduce) requestAnimationFrame(dust) }
+    requestAnimationFrame(dust);
+    /* ---------- generated "video": dough to golden loaf ---------- */
+    const vc = $('#vid'), vx = vc.getContext('2d'); let vw, vh;
+    function vr() { const d = Math.min(devicePixelRatio || 1, 2); vw = vc.width = vc.offsetWidth * d; vh = vc.height = vc.offsetHeight * d } vr(); addEventListener('resize', vr);
+    const SC = [['Mix', 'Flour, water, salt, patience'], ['Rise', 'Slow fermentation overnight'], ['Bake', 'Steam and 245°C heat'], ['Serve', 'Warm and crackling']], DUR = 3.2;
+    let vt = 0, playing = true, last = performance.now();
+    const mix = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k), rgb = c => `rgb(${c.map(Math.round)})`;
+    function frame(now) {
+      const dt = Math.min((now - last) / 1000, .1); last = now; if (playing) vt += dt; const tot = DUR * 4, T = vt % tot, sc = Math.floor(T / DUR), k = (T % DUR) / DUR, w = vw, h = vh, u = h / 100;
+      const heat = sc === 2 ? Math.min(1, k * 1.5) : sc === 3 ? 1 - k * .5 : 0;
+      const g = vx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, rgb(mix([14, 11, 30], [70, 20, 30], heat))); g.addColorStop(1, rgb(mix([30, 24, 60], [255, 120, 40], heat * .9))); vx.fillStyle = g; vx.fillRect(0, 0, w, h);
+      vx.fillStyle = '#00000040'; vx.fillRect(0, h * .78, w, h * .22);
+      const cx = w / 2, cy = h * .74;
+      let size = sc === 0 ? .4 + k * .1 : sc === 1 ? .5 + k * .5 : sc === 2 ? 1 + k * .25 : 1.25, col = sc < 2 ? mix([240, 222, 190], [246, 214, 160], sc ? 1 : k) : mix([246, 214, 160], [205, 128, 50], sc === 2 ? k : 1);
+      if (sc === 0) { for (let i = 0; i < 60; i++) { const a = i * .5 + vt * 3, r = (1 - k) * u * 45 * ((i % 7) / 7 + .2); vx.fillStyle = 'rgba(255,246,234,.7)'; vx.beginPath(); vx.arc(cx + Math.cos(a) * r * 1.6, cy - u * 20 + Math.sin(a) * r * .5, u * .5, 0, 6.28); vx.fill() } vx.fillStyle = '#6b4a3a'; vx.beginPath(); vx.ellipse(cx, cy, u * 34, u * 10, 0, 0, 6.28); vx.fill() }
+      const bw = u * 34 * size, bh = u * 22 * size; vx.save(); vx.translate(cx, cy);
+      vx.fillStyle = rgb(col); vx.beginPath(); vx.moveTo(-bw, 0); vx.bezierCurveTo(-bw, -bh * 1.6, bw, -bh * 1.6, bw, 0); vx.closePath(); vx.fill();
+      if (sc >= 2) { vx.strokeStyle = 'rgba(255,236,190,' + (.3 + heat * .6) + ')'; vx.lineWidth = u * 1.4; vx.lineCap = 'round'; for (let i = -2; i <= 2; i++) { vx.beginPath(); vx.moveTo(i * bw * .35 - bw * .1, -bh * 1.0 + Math.abs(i) * u); vx.lineTo(i * bw * .35 + bw * .12, -bh * .55 + Math.abs(i) * u); vx.stroke() } }
+      vx.fillStyle = 'rgba(255,255,255,.18)'; vx.beginPath(); vx.ellipse(-bw * .3, -bh * .9, bw * .35, bh * .14, -.4, 0, 6.28); vx.fill(); vx.restore();
+      if (sc >= 2) { for (let i = 0; i < 14; i++) { const ph = (vt * .5 + i / 14) % 1, x = cx + Math.sin(i * 2 + vt) * u * 18, y = cy - bh * 1.4 - ph * u * 45; vx.fillStyle = `rgba(255,255,255,${.22 * (1 - ph)})`; vx.beginPath(); vx.arc(x, y, u * (2 + ph * 5), 0, 6.28); vx.fill() } }
+      vx.fillStyle = `rgba(255,160,70,${heat * .18})`; vx.fillRect(0, 0, w, h);
+      const cap = $('#vcap'); if (cap.dataset.s != sc) { cap.dataset.s = sc; cap.innerHTML = `${SC[sc][0]}<small>${SC[sc][1]}</small>` }
+      $('#vprog').style.width = (T / tot * 100) + '%';
+      if (!reduce || !frame.once) { frame.once = 1; requestAnimationFrame(frame) }
+    }
+    requestAnimationFrame(frame);
+    $('#vplay').onclick = e => { playing = !playing; e.currentTarget.textContent = playing ? '❚❚' : '▶'; e.currentTarget.setAttribute('aria-label', playing ? 'Pause video' : 'Play video') };
+    $('#vskip').onclick = () => { vt = (Math.floor(vt / DUR) + 1) * DUR };
+  </script>
+</body>
+
+</html>
